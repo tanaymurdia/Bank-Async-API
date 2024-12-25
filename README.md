@@ -49,6 +49,12 @@ The **Bank Async API** is designed to facilitate secure and efficient banking tr
    docker-compose up --build
    ```
 
+2. Remove Container
+
+   ```bash
+   docker-compose down
+   ```
+
 ## API Endpoints
 
 ### Authentication
