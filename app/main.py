@@ -2,7 +2,7 @@ from fastapi import FastAPI, HTTPException, Depends, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi.security import OAuth2PasswordRequestForm
 from db.database import get_db
-from app.crud import create_bank_account, transfer, get_balance, get_transfer_history, create_customer, check_customer_exists
+from app.crud import create_bank_account, transfer, get_balance, get_transfer_history, create_customer, check_customer_exists, deposit_funds, withdraw_funds, get_account_details, list_customer_accounts, get_account_statements
 from app.auth import get_current_user, create_access_token, Token
 from pydantic import BaseModel
 from app.utils import logger
@@ -36,6 +36,7 @@ async def login_for_access_token(
                 detail="Incorrect username or password",
                 headers={"WWW-Authenticate": "Bearer"},
             )
+        logger.info(f" Testing username={form_data.username} {user_in_db["username"]}")
         access_token = create_access_token(data={"sub": user_in_db["username"]})
         logger.info(f"[Token] Access token created for username={form_data.username}")
         return {"access_token": access_token, "token_type": "bearer"}
@@ -124,5 +125,81 @@ async def read_transfer_history(
         return {"transfer_history": history}
     except Exception as e:
         logger.error(f"[Get History] Error fetching transfer history for account_id={account_id}: {e}")
+        raise HTTPException(status_code=500, detail="Internal Server Error")
+    
+
+@app.post("/accounts/{account_id}/deposit")
+async def deposit_to_account(
+    account_id: int, 
+    amount: dict, 
+    db: AsyncSession = Depends(get_db), 
+    current_user: str = Depends(get_current_user)
+):
+    try:
+        logger.info(f"[Deposit] Depositing {amount['amount']} to account_id={account_id}")
+        account = await deposit_funds(db, account_id, amount['amount'])
+        logger.info(f"[Deposit] New balance for account_id={account_id} is {account.balance}")
+        return {"account_id": account.id, "new_balance": account.balance}
+    except Exception as e:
+        logger.error(f"[Deposit] Error depositing to account {account_id}: {e}")
+        raise HTTPException(status_code=500, detail="Internal Server Error")
+
+@app.post("/accounts/{account_id}/withdraw")
+async def withdraw_from_account(
+    account_id: int, 
+    amount: dict, 
+    db: AsyncSession = Depends(get_db), 
+    current_user: str = Depends(get_current_user)
+):
+    try:
+        logger.info(f"[Withdrawal] Withdrawing {amount['amount']} from account_id={account_id}")
+        account = await withdraw_funds(db, account_id, amount['amount'])
+        logger.info(f"[Withdrawal] New balance for account_id={account_id} is {account.balance}")
+        return {"account_id": account.id, "new_balance": account.balance}
+    except Exception as e:
+        logger.error(f"[Withdrawal] Error withdrawing from account {account_id}: {e}")
+        raise HTTPException(status_code=500, detail="Internal Server Error")
+
+@app.get("/accounts/{account_id}")
+async def get_account_information(
+    account_id: int, 
+    db: AsyncSession = Depends(get_db),
+    current_user: str = Depends(get_current_user)
+):
+    try:
+        logger.info(f"[Get Account] Retrieving information for account_id={account_id}")
+        account = await get_account_details(db, account_id)
+        return account
+    except Exception as e:
+        logger.error(f"[Get Account] Error retrieving account {account_id}: {e}")
+        raise HTTPException(status_code=500, detail="Internal Server Error")
+
+@app.get("/customers/{customer_id}/accounts")
+async def get_customer_accounts(
+    customer_id: int, 
+    db: AsyncSession = Depends(get_db),
+    current_user: str = Depends(get_current_user)
+):
+    try:
+        logger.info(f"[Get Customer Accounts] Listing accounts for customer_id={customer_id}")
+        accounts = await list_customer_accounts(db, customer_id)
+        return accounts
+    except Exception as e:
+        logger.error(f"[Get Customer Accounts] Error listing accounts for customer_id={customer_id}: {e}")
+        raise HTTPException(status_code=500, detail="Internal Server Error")
+    
+@app.get("/accounts/{account_id}/statement")
+async def get_account_statement(
+    account_id: int, 
+    db: AsyncSession = Depends(get_db),
+    current_user: str = Depends(get_current_user)
+):
+    try:
+        logger.info(f"Retrieving statement for account_id={account_id}")
+        statement = await get_account_statements(db, account_id)
+        logger.info(f"Statement retrieved for account_id={account_id}: {statement}")
+        return {"account_id": account_id, "statement": statement}
+    except Exception as e:
+        logger.error(f"Error retrieving statement for account_id={account_id}: {e}")
         raise HTTPException(status_code=500, detail="Internal Server Error")
     

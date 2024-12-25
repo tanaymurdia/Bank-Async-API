@@ -70,3 +70,62 @@ async def get_transfer_history(session: AsyncSession, account_id: int):
     )
     result = await session.execute(query)
     return result.scalars().all()
+
+
+async def deposit_funds(session: AsyncSession, account_id: int, amount: float):
+    async with session.begin():
+        account = await session.get(BankAccount, account_id)
+        
+        if not account:
+            raise HTTPException(status_code=404, detail="Account not found")
+
+        if amount <= 0:
+            raise HTTPException(status_code=400, detail="Deposit amount must be positive")
+
+        account.balance += amount
+        session.add(account)
+
+    return account
+
+async def withdraw_funds(session: AsyncSession, account_id: int, amount: float):
+    async with session.begin():
+        account = await session.get(BankAccount, account_id)
+        
+        if not account:
+            raise HTTPException(status_code=404, detail="Account not found")
+        
+        if amount <= 0:
+            raise HTTPException(status_code=400, detail="Withdrawal amount must be positive")
+
+        if account.balance < amount:
+            raise HTTPException(status_code=400, detail="Insufficient funds")
+
+        account.balance -= amount
+        session.add(account)
+
+    return account
+
+async def get_account_details(session: AsyncSession, account_id: int):
+    account = await session.get(BankAccount, account_id)
+    
+    if not account:
+        raise HTTPException(status_code=404, detail="Account not found")
+
+    return account
+
+async def list_customer_accounts(session: AsyncSession, customer_id: int):
+    result = await session.execute(
+        select(BankAccount).where(BankAccount.customer_id == customer_id)
+    )
+    accounts = result.scalars().all()
+    
+    return accounts
+
+async def get_account_statements(session: AsyncSession, account_id: int):
+    result = await session.execute(
+        select(TransferHistory).where(
+            (TransferHistory.from_account_id == account_id) | 
+            (TransferHistory.to_account_id == account_id)
+        ).order_by(TransferHistory.timestamp.desc())
+    )
+    return result.scalars().all()

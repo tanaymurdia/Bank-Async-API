@@ -5,9 +5,10 @@ from fastapi.security import OAuth2PasswordBearer
 from pydantic import BaseModel
 from config.config import Config
 
-SECRET_KEY = Config.SECRET_KEY
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = Config.ACCESS_TOKEN_EXPIRE_MINUTES
+SECRET_KEY = Config.SECRET_KEY if Config.SECRET_KEY is not None else "x9pL4y5JtOq-lesNbsfZav4UPqvKHJ6o1aPYonhasdA"
+
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 

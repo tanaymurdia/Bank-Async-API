@@ -11,7 +11,7 @@ def token():
     with patch("app.auth.create_access_token") as mock_create_access_token:
         mock_create_access_token.return_value = "testtoken"
         
-        response = client.post("/token", data={"username": "username", "password": "password"})
+        response = client.post("/token", data={"username": "user", "password": "password"})
         print("Mock: ", response.json())
         return response.json()["access_token"]
     
@@ -119,7 +119,7 @@ async def test_get_account_balance(token):
 
 
 @pytest.mark.asyncio
-async def test_get_account_transfer(token):
+async def test_get_account_transfer_history(token):
     mock_transfer_data = [TransferHistory(id=1,from_account_id=1,
             to_account_id=2,
             amount=100.0)]
