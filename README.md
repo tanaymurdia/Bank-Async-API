@@ -56,7 +56,7 @@ The **Bank Async API** is designed to facilitate secure and efficient banking tr
 - **POST /token**
   - Description: Obtain an access token using username and password.
   - Request: JSON body containing `username` and `password`.
-  - The username should be `user` and the password should be `password`
+  - Note: The username should be `user` and the password should be `password`.
 
 ### Customer Management
 
@@ -72,18 +72,52 @@ The **Bank Async API** is designed to facilitate secure and efficient banking tr
   
 - **GET /accounts/{account_id}/balance**
   - Description: Retrieve the balance of an account.
-  - Request: Account ID as path parameter.
+  - Request: Account ID as a path parameter.
 
 - **GET /accounts/{account_id}/history**
   - Description: Retrieve the transaction history of an account.
-  - Request: Account ID as path parameter.
+  - Request: Account ID as a path parameter.
+
+- **GET /accounts/{account_id}/statement**
+  - Description: Retrieve a detailed account statement including all transactions, considering both withdrawals and deposits.
+  - Request: Account ID as a path parameter.
+
+- **POST /accounts/{account_id}/deposit**
+  - Description: Deposit funds into a specific bank account.
+  - Request: Account ID as a path parameter and an amount as a JSON body:
+    ```json
+    {
+      "amount": 100.0
+    }
+    ```
+
+- **POST /accounts/{account_id}/withdraw**
+  - Description: Withdraw funds from a specific bank account.
+  - Request: Account ID as a path parameter and an amount as a JSON body:
+    ```json
+    {
+      "amount": 50.0
+    }
+    ```
 
 ### Transactions
 
 - **POST /transfer/**
   - Description: Transfer funds between two accounts.
-  - Request: JSON body with `from_account_id`, `to_account_id`, and `amount`.
+  - Request: JSON body with `from_account_id`, `to_account_id`, and `amount`:
+    ```json
+    {
+      "from_account_id": 1,
+      "to_account_id": 2,
+      "amount": 25.0
+    }
+    ```
 
+### Customer Statements
+
+- **GET /customers/{customer_id}/accounts**
+  - Description: List all bank accounts associated with a customer.
+  - Request: Customer ID as a path parameter.
 ## Future Expansion Ideas
 
 1. **Microservice Architecture**:
